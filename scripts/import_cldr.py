@@ -685,6 +685,20 @@ def parse_calendar_periods(data, calendar):
                 if 'alt' not in day_period.attrib:
                     dest_dict[period_type] = str(day_period.text)
 
+    # In CLDR 44, the narrow and wide periods may not be present.
+    # In that case we fall back to the abbreviated periods.
+    for periods_ctx in periods.values():
+        if not (abbreviated := periods_ctx.get('abbreviated')):
+            continue
+
+        if 'narrow' not in periods_ctx:
+            periods_ctx['narrow'] = abbreviated
+        if 'wide' not in periods_ctx:
+            periods_ctx['wide'] = abbreviated
+
+    if 'stand-alone' not in periods and 'format' in periods:
+        periods['stand-alone'] = periods['format']
+
 
 def parse_calendar_date_formats(data, calendar):
     date_formats = data.setdefault('date_formats', {})
@@ -803,6 +817,12 @@ def parse_decimal_formats(data, tree):
                 else:
                     # Regular decimal format.
                     decimal_formats[length_type] = pattern
+
+    # In CLDR 44, the long decimal format may not be present.
+    # In that case we fall back to the short format
+    formats = data.get('compact_decimal_formats', {})
+    if 'long' not in formats and 'short' in formats:
+        formats['long'] = formats['short']
 
 
 def parse_scientific_formats(data, tree):
