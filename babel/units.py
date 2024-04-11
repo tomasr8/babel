@@ -249,7 +249,7 @@ def format_compound_unit(
     '4 m/ratakisko'
 
     >>> format_compound_unit(35, "minute", denominator_unit="fathom", locale="sv")
-    '35 minuter per famn'
+    '35 minuter per length-fathom'
 
     >>> from babel.numbers import format_currency
     >>> format_compound_unit(format_currency(35, "JPY", locale="de"), denominator_unit="liter", locale="de")
