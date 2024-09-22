@@ -23,6 +23,7 @@ import warnings
 from collections import OrderedDict
 from configparser import RawConfigParser
 from io import StringIO
+from pathlib import Path
 from typing import BinaryIO, Iterable, Literal
 
 from babel import Locale, localedata
@@ -853,6 +854,91 @@ class UpdateCatalog(CommandMixin):
             return
 
 
+class LintCatalog(CommandMixin):
+    description = 'check message catalogs for common problems'
+    user_options = [
+        ('input-paths=', None,
+        'files or directories that should be checked. Separate multiple '
+        'files or directories with commas(,)'),  # TODO: Support repetition of this argument
+    ]
+    as_args = 'input-paths'
+
+    def initialize_options(self):
+        self.input_paths = None
+
+    def finalize_options(self):
+        if not self.input_paths:
+            raise OptionError("no input files or directories specified")
+
+    def run(self):
+        for input_path in self.input_paths:
+            if Path(input_path).is_dir():
+                self._lint_directory(input_path)
+            else:
+                self._lint_file(input_path)
+
+    def _lint_directory(self, directory):
+        for path in Path(directory).glob('**/*.po'):
+            if path.is_dir():
+                continue
+            self._lint_file(path)
+
+    def _lint_file(self, path):
+        with open(path, 'rb') as f:
+                catalog = read_po(f)
+
+        for msg, msg_pairs in self._iter_msg_pairs(catalog):
+            for orig, trans in msg_pairs:
+                orig_placeholders = self._extract_placeholders(orig)
+                trans_placeholders = self._extract_placeholders(trans)
+                if orig_placeholders != trans_placeholders:
+                    self.log.warning(
+                        'Mismatched placeholders in %s:%d: %s',
+                        path, msg.lineno, f'{orig_placeholders} != {trans_placeholders}'
+                    )
+    
+    def _iter_msg_pairs(self, catalog: Catalog):
+        """Iterate over all (original, translated) message pairs in the catalog.
+
+        For singular messages, this produces a single pair (original, translated).
+        For plural messages, this produces a pair for each plural form. For example,
+        for a language with 4 plural forms, this will generate:
+
+            (orig_singular, trans_singular),
+            (orig_plural,   trans_plural_1),
+            (orig_plural,   trans_plural_2),
+            (orig_plural,   trans_plural_3)
+
+        For languages with nplurals=1, this generates a single pair:
+
+            (orig_plural, trans_plural)
+        """
+        for msg in catalog:
+            all_trans = msg.string if isinstance(msg.string, tuple) else (msg.string,)
+            if not any(all_trans):  # not translated
+                continue
+
+            if not msg.pluralizable:
+                yield msg, ((msg.id, msg.string),)
+            elif catalog.num_plurals == 1:
+                # Pluralized messages with nplurals=1 should be compared against the 'msgid_plural'
+                yield msg, ((msg.id[1], msg.string[0]),)
+            else:
+                # Pluralized messages with nplurals>1 should compare 'msgstr[0]' against the singular and
+                # any other 'msgstr[X]' against 'msgid_plural'.
+                yield msg, ((msg.id[0], msg.string[0]), *((msg.id[1], t) for t in msg.string[1:]))
+
+    def _extract_placeholders(self, string):
+        pattern = r'''(
+            \{[^}]*\}    # Match closing curly brace (incl. empty)
+            |            # OR
+            \%\([^)]+\)  # Match closing parenthesis
+            [sdf]        # Match format type (string, decimal, float)
+        )
+        '''
+        return set(re.findall(pattern, string, re.VERBOSE))
+
+
 class CommandLineInterface:
     """Command-line interface.
 
@@ -867,6 +953,7 @@ class CommandLineInterface:
         'extract': 'extract messages from source files and generate a POT file',
         'init': 'create new message catalogs from a POT file',
         'update': 'update existing message catalogs from a POT file',
+        'lint': 'check message catalogs for common problems',
     }
 
     command_classes = {
@@ -874,6 +961,7 @@ class CommandLineInterface:
         'extract': ExtractMessages,
         'init': InitCatalog,
         'update': UpdateCatalog,
+        'lint': LintCatalog,
     }
 
     log = None  # Replaced on instance level
