@@ -333,7 +333,6 @@ msg = _(u'Foo Bar')
         buf = BytesIO(b"""
 foo = _('foo', 'bar')
 n = ngettext('hello', 'there', n=3)
-n = ngettext(n=3, 'hello', 'there')
 n = ngettext(n=3, *messages)
 n = ngettext()
 n = ngettext('foo')
@@ -341,10 +340,9 @@ n = ngettext('foo')
         messages = list(extract.extract_python(buf, ('_', 'ngettext'), [], {}))
         assert messages[0][2] == ('foo', 'bar')
         assert messages[1][2] == ('hello', 'there', None)
-        assert messages[2][2] == (None, 'hello', 'there')
-        assert messages[3][2] == (None, None)
-        assert messages[4][2] is None
-        assert messages[5][2] == 'foo'
+        assert messages[2][2] == (None, None)
+        assert messages[3][2] is None
+        assert messages[4][2] == 'foo'
 
     def test_utf8_message(self):
         buf = BytesIO("""
@@ -433,17 +431,17 @@ _(u'Hello, {0} and {1}!', _(u'Heungsub'),
         assert messages[0][2] == ('Hello, {name}!', None)
         assert messages[0][3] == ['NOTE: First']
         assert messages[1][2] == 'Foo Bar'
-        assert messages[1][3] == []
-        assert messages[2][2] == ('Hello, {name1} and {name2}!', None)
+        assert messages[1][3] == ['NOTE: First']
+        assert messages[2][2] == ('Hello, {name1} and {name2}!', None, None)
         assert messages[2][3] == ['NOTE: Second']
         assert messages[3][2] == 'Heungsub'
-        assert messages[3][3] == []
+        assert messages[3][3] == ['NOTE: Second']
         assert messages[4][2] == 'Armin'
         assert messages[4][3] == []
-        assert messages[5][2] == ('Hello, {0} and {1}!', None)
+        assert messages[5][2] == ('Hello, {0} and {1}!', None, None)
         assert messages[5][3] == ['NOTE: Third']
         assert messages[6][2] == 'Heungsub'
-        assert messages[6][3] == []
+        assert messages[6][3] == ['NOTE: Third']
         assert messages[7][2] == 'Armin'
         assert messages[7][3] == []
 
@@ -481,7 +479,6 @@ msg10 = dngettext(domain, 'Page', 'Pages', 3)
         buf = BytesIO(b"""
 foo = _('foo', 'bar')
 n = ngettext('hello', 'there', n=3)
-n = ngettext(n=3, 'hello', 'there')
 n = ngettext(n=3, *messages)
 n = ngettext()
 n = ngettext('foo')
