@@ -558,6 +558,9 @@ def extract_python(
         elif funcname and call_stack == 0:
             nested = (tok == NAME and value in keywords)
             if (tok == OP and value == ')') or nested:
+                if any(isinstance(part, bytes) for part in buf):
+                    del buf[:]
+
                 if buf:
                     messages.append(''.join(buf))
                     del buf[:]
@@ -604,6 +607,9 @@ def extract_python(
                         buf.append(val)
 
             elif tok == OP and value == ',':
+                if any(isinstance(part, bytes) for part in buf):
+                    del buf[:]
+
                 if buf:
                     messages.append(''.join(buf))
                     del buf[:]

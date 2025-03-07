@@ -447,6 +447,21 @@ _(u'Hello, {0} and {1}!', _(u'Heungsub'),
         assert messages[7][2] == 'Armin'
         assert messages[7][3] == []
 
+    def test_bytestrings_are_not_extracted(self):
+        buf = BytesIO(b"""\
+_(b'foo')
+_(b'foo' 'bar')
+_('foo' b'bar')
+_(b'foo' b'bar')
+""")
+        messages = list(extract.extract_python(buf,
+                                               extract.DEFAULT_KEYWORDS.keys(),
+                                               [], {}))
+        assert messages[0][2] is None
+        assert messages[1][2] is None
+        assert messages[2][2] is None
+        assert messages[3][2] is None
+
 
 class ExtractTestCase(unittest.TestCase):
 
