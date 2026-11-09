@@ -214,7 +214,10 @@ Time Fields
   |          |        | four for the full name.                                |
   |          +--------+--------------------------------------------------------+
   |          | ``Z``  | Use one to three letters for RFC 822, four letters for |
-  |          |        | GMT format.                                            |
+  |          |        | GMT format. ``ZZZZ`` is equivalent to ``OOOO``.        |
+  |          +--------+--------------------------------------------------------+
+  |          | ``O``` | Localized GMT format. Use ``O`` for the short form     |
+  |          |        | ("GMT-8") and ``OOOO`` for the long form ("GMT-08:00") |
   |          +--------+--------------------------------------------------------+
   |          | ``v``  | Use one letter for short wall (generic) time, four for |
   |          |        | long wall time.                                        |

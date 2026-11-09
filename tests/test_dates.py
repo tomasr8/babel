@@ -303,6 +303,26 @@ def test_get_timezone_gmt_utc(timezone_getter, locale, gmt, utc):
     assert dates.get_timezone_gmt(dt, 'short', locale=locale, utc=True) == '-0330'
 
 
+@pytest.mark.parametrize(('zone', 'expected_en', 'expected_fr'), [
+    ('America/Los_Angeles', 'GMT-7', 'UTC-7'),
+    ('Asia/Kolkata', 'GMT+5:30', 'UTC+5:30'),
+    ('America/St_Johns', 'GMT-2:30', 'UTC-2:30'),
+    ('Europe/London', 'GMT+1', 'UTC+1'),
+    ('UTC', 'GMT+0', 'UTC+0'),
+])
+def test_get_timezone_gmt_localized_short(timezone_getter, zone, expected_en, expected_fr):
+    dt = _localize(timezone_getter(zone), datetime(2007, 7, 1, 12, 0))
+    assert dates.get_timezone_gmt(dt, 'localized_short', locale='en') == expected_en
+    assert dates.get_timezone_gmt(dt, 'localized_short', locale='fr') == expected_fr
+    assert dates.get_timezone_gmt(dt, 'localized_short', locale='en', utc=True) == expected_fr
+    # The O pattern is the short localized GMT format, OOOO the long one
+    assert dates.format_datetime(dt, 'O', locale='en') == expected_en
+    assert dates.format_datetime(dt, 'OOOO', locale='en') == dates.get_timezone_gmt(dt, 'long', locale='en')
+    # localized_long is an alias of long
+    assert dates.get_timezone_gmt(dt, 'localized_long', locale='fr') == dates.get_timezone_gmt(dt, 'long', locale='fr')
+    assert dates.get_timezone_gmt(dt, 'localized_long', locale='en', utc=True) == dates.get_timezone_gmt(dt, 'long', locale='en', utc=True)
+
+
 def test_get_timezone_location(timezone_getter):
     tz = timezone_getter('America/St_Johns')
     assert (dates.get_timezone_location(tz, locale='de_DE') ==

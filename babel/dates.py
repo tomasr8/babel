@@ -466,7 +466,7 @@ def get_time_format(
 
 def get_timezone_gmt(
     datetime: _Instant = None,
-    width: Literal['long', 'short', 'iso8601', 'iso8601_short'] = 'long',
+    width: Literal['long', 'localized_long', 'localized_short', 'short', 'iso8601', 'iso8601_short'] = 'long',
     locale: Locale | str | None = None,
     return_z: bool = False,
     # TODO(3.0): Make return_z kw-only too
@@ -499,8 +499,16 @@ def get_timezone_gmt(
     >>> get_timezone_gmt(dt, 'long', locale='fr_FR')
     'UTC-07:00'
 
-    Passing ``utc=True`` requests the localized equivalent of "UTC" instead of
-    "GMT":
+    The ``localized_short`` form is the short form of the localized GMT format
+    without leading zero and optional minutes and seconds field. The
+    ``localized_long`` option is an alias of ``long``:
+
+    >>> get_timezone_gmt(dt, 'localized_long', locale='en')
+    'GMT-07:00'
+    >>> get_timezone_gmt(dt, 'localized_short', locale='en')
+    'GMT-7'
+    >>> get_timezone_gmt(_localize(get_timezone('Asia/Kolkata'), datetime(2007, 4, 1)), 'localized_short', locale='en')
+    'GMT+5:30'
 
     >>> get_timezone_gmt(dt, locale='en', utc=True)
     'UTC-07:00'
@@ -511,13 +519,18 @@ def get_timezone_gmt(
 
     :param datetime: the ``datetime`` object; if `None`, the current date and
                      time in UTC is used
-    :param width: either "long" or "short" or "iso8601" or "iso8601_short"
+    :param width: "long" or its alias "localized_long" (``GMT-07:00``),
+                  "localized_short" (``GMT-7``), "short" (``-0700``),
+                  "iso8601" (``-07:00``) or "iso8601_short" (``-07``, ``-0730``)
+
+                  .. versionchanged:: 2.19
+                     Added ``localized_long`` and ``localized_short``. 
     :param locale: the `Locale` object, or a locale string. Defaults to the system time locale.
     :param return_z: True or False; Function returns indicator "Z"
                      when local time offset is 0
     :param utc: If ``True``, use the localized equivalent of "UTC" instead of
-                "GMT" in the long format. Only affects ``width='long'`` as
-                other widths have no GMT/UTC prefix.
+                "GMT". Only affects the localized widths as the ISO 8601 widths
+                have no GMT/UTC prefix.
 
                 .. versionadded:: 2.19
     """
@@ -536,7 +549,10 @@ def get_timezone_gmt(
         pattern = '%s%02d%02d'
     elif width == 'iso8601':
         pattern = '%s%02d:%02d'
-    else:
+    elif width == 'localized_short':
+        short_offset = f'{sign}{hours}' if seconds == 0 else f'{sign}{hours}:{seconds // 60:02d}'
+        return locale.zone_formats['gmt_utc' if utc else 'gmt'] % short_offset
+    else:  # long / localized_long
         pattern = locale.zone_formats['gmt_utc' if utc else 'gmt'] % '%s%02d:%02d'
     return pattern % (sign, hours, seconds // 60)
 
@@ -1802,9 +1818,7 @@ class DateTimeFormat:
                 return get_timezone_gmt(value, width, locale=self.locale, return_z=True)
             return get_timezone_gmt(value, width, locale=self.locale)
         elif char == 'O':
-            if num == 4:
-                return get_timezone_gmt(value, width, locale=self.locale)
-        # TODO: To add support for O:1
+            return get_timezone_gmt(value, 'localized_short' if num == 1 else 'localized_long', locale=self.locale)
         elif char == 'v':
             return get_timezone_name(value.tzinfo, width, locale=self.locale)
         elif char == 'V':
