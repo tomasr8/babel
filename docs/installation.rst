@@ -9,7 +9,12 @@ the dependencies it needs.  On Python versions where the standard library
 timezone support. If `pytz`_  is installed, it is preferred over the
 standard library `zoneinfo`_  module where possible.
 
+On Windows, which has no system timezone database available, the `tzdata`_
+package is installed as a dependency to provide the data for `zoneinfo`_.
+
 .. _pytz: https://pythonhosted.org/pytz/
+
+.. _tzdata: https://pypi.org/project/tzdata/
 
 .. _zoneinfo: https://docs.python.org/3/library/zoneinfo.html
 

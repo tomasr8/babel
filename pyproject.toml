@@ -10,6 +10,10 @@ readme = "README.rst"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
 requires-python = ">=3.9"
+dependencies = [
+    # Windows has no system timezone database for `zoneinfo` to read
+    "tzdata; sys_platform == 'win32'",
+]
 authors = [
     { name = "Armin Ronacher", email = "armin.ronacher@active-4.com" },
 ]
@@ -46,7 +50,6 @@ dev = [
     "pytest>=6.0",
     "pytz",
     "setuptools",
-    "tzdata;sys_platform == 'win32'",
 ]
 
 [project.urls]
